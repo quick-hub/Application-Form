@@ -36,13 +36,20 @@
       <!-- ============================================================
            FORM — FormSubmit.co integration
            ------------------------------------------------------------
-           ✅ action   → https://formsubmit.co/hypehive00@gmail.com
-           ✅ method   → POST
-           ✅ enctype  → multipart/form-data   (file uploads)
-           ✅ target   → hiddenFrame           (page never navigates)
-           ✅ NO `_next` — no redirect anywhere
+           • action/method/enctype are a no-JS fallback only.
+           • script.js submits with fetch() to
+             https://formsubmit.co/ajax/Cjsind90@gmail.com
+             and shows the thank-you panel only on a confirmed success.
+           • `novalidate` lets script.js show the custom red-dot
+             validation instead of the browser's default bubbles.
+           • No `_next` → no redirect anywhere.
            ============================================================ -->
-      <form action="https://formsubmit.co/Cjsind90@gmail.com" method="POST" enctype="multipart/form-data" id="houseAppForm" target="hiddenFrame"
+      <form
+        action="https://formsubmit.co/Cjsind90@gmail.com"
+        method="POST"
+        enctype="multipart/form-data"
+        id="houseAppForm"
+        novalidate
       >
         <!-- ==================================================
              FormSubmit configuration
@@ -57,8 +64,6 @@
              App state
              ================================================== -->
         <input type="hidden" name="application_fee" id="feeHidden" value="$50.00 USD (1 occupant)">
-        <input type="hidden" name="signature_data"  id="signatureData" value="">
-        <input type="file"   name="signature_image" id="signatureImageInput" accept="image/png" hidden>
 
         <div class="form-grid">
 
@@ -501,9 +506,6 @@
 
     </div>
   </main>
-
-  <!-- Hidden iframe — receives FormSubmit's POST response -->
-  <iframe name="hiddenFrame" id="hiddenFrame" style="display:none" title="Form submission target"></iframe>
 
   <script src="script.js"></script>
 </body>
