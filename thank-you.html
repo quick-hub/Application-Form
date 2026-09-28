@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Application Submitted · Thank You</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
+    rel="stylesheet"
+  >
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #e8f1fb 0%, #f5f9ff 50%, #eef5ff 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      color: #0b2a4a;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .thanks-card {
+      position: relative;
+      width: 100%;
+      max-width: 560px;
+      padding: 3rem 2.5rem;
+      border-radius: 2rem;
+      background: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow:
+        0 24px 48px -12px rgba(0, 20, 40, 0.35),
+        0 10px 24px rgba(0, 0, 0, 0.10);
+      text-align: center;
+      animation: pop 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .thanks-card__icon {
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      background: linear-gradient(135deg, #1e7be0 0%, #0b4fa0 100%);
+      color: #ffffff;
+      box-shadow: 0 16px 40px -10px rgba(30, 123, 224, 0.6);
+      animation: bounceIn 0.9s 0.2s both;
+    }
+
+    .thanks-card h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #05203d;
+      margin-bottom: 0.75rem;
+    }
+
+    .thanks-card p {
+      font-size: 1rem;
+      line-height: 1.65;
+      color: #33506e;
+      margin-bottom: 1.75rem;
+      font-weight: 500;
+    }
+
+    .thanks-card p strong {
+      color: #003d73;
+      font-weight: 700;
+    }
+
+    .thanks-card__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+
+    .thanks-card__btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.95rem 1.75rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 60px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.25s, background 0.25s;
+      border: none;
+    }
+
+    .thanks-card__btn--primary {
+      background: linear-gradient(135deg, #0b2a4a 0%, #123b62 100%);
+      color: #ffffff;
+      box-shadow: 0 12px 28px -8px rgba(11, 42, 74, 0.55);
+    }
+
+    .thanks-card__btn--primary:hover {
+      background: linear-gradient(135deg, #123b62 0%, #0b2a4a 100%);
+      box-shadow: 0 16px 34px -8px rgba(11, 42, 74, 0.65);
+      transform: translateY(-2px);
+    }
+
+    .thanks-card__btn--ghost {
+      background: #ffffff;
+      color: #0b2a4a;
+      border: 1.5px solid #d9e4f0;
+      box-shadow: 0 4px 12px rgba(0, 20, 40, 0.08);
+    }
+
+    .thanks-card__btn--ghost:hover {
+      background: #f2f8ff;
+      border-color: #1e7be0;
+      color: #0055a0;
+      transform: translateY(-2px);
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(24px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0)    scale(1);    }
+    }
+
+    @keyframes bounceIn {
+      0%   { opacity: 0; transform: scale(0.4); }
+      60%  { opacity: 1; transform: scale(1.1); }
+      100% { opacity: 1; transform: scale(1);   }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="thanks-card">
+    <div class="thanks-card__icon">✓</div>
+
+    <h1>Application Submitted!</h1>
+
+    <p>
+      Thank you for your application.<br>
+      We've received your information and will review it shortly.<br><br>
+      Payment instructions and next steps will be sent to
+      <strong>your email</strong> within 24–48 hours.
+    </p>
+
+    <div class="thanks-card__actions">
+      <a href="index.html" class="thanks-card__btn thanks-card__btn--primary">
+        🏠 Back to home
+      </a>
+      <a href="thank-you.html" class="thanks-card__btn thanks-card__btn--ghost">
+        📝 Submit another
+      </a>
+    </div>
+  </main>
+</body>
+</html>

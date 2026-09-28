@@ -1,0 +1,1101 @@
+/* ============================================================
+   APPLICATION FORM · STYLESHEET
+   ------------------------------------------------------------
+   Table of contents
+     1.  Reset & base
+     2.  Card & background layers
+     3.  Header
+     4.  Grid & sections
+     5.  Labels & fields
+     6.  File upload
+     7.  Number stepper
+     8.  Amount to pay
+     9.  Conditional panels
+    10.  Signature pad
+    11.  Validation (with visible red dot)
+    12.  Fee summary
+    13.  Submit button
+    14.  Small print
+    15.  Animations
+    16.  Reduced motion
+    17.  Submit-attempt guidance
+    18.  ID uploads (optional + conditional)
+    19.  ✅ Inline thank-you panel (replaces redirect)
+   ============================================================ */
+
+
+/* ============================================================
+   1. RESET & BASE
+   ============================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #e8f1fb 0%, #f5f9ff 50%, #eef5ff 100%);
+  min-height: 100vh;
+  padding: 2rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  color: #0b2a4a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* ============================================================
+   2. CARD & BACKGROUND LAYERS
+   ============================================================ */
+.form-card {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: 820px;
+  border-radius: 2rem;
+  overflow: hidden;
+  background-color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 24px 48px -12px rgba(0, 20, 40, 0.35),
+    0 10px 24px rgba(0, 0, 0, 0.10);
+  animation: cardFadeIn 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.form-card__bg {
+  position: absolute;
+  inset: 0;
+  background-image: url('images/Image.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  transform: scale(1.02);
+  animation: bgZoom 20s ease-in-out infinite alternate;
+}
+
+.form-card__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(245, 249, 255, 0.16) 100%
+  );
+}
+
+.form-card__content {
+  position: relative;
+  z-index: 2;
+  padding: 2.75rem 2.75rem 2.5rem;
+  max-height: 92vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(30, 123, 224, 0.5) transparent;
+}
+
+.form-card__content::-webkit-scrollbar { width: 8px; }
+.form-card__content::-webkit-scrollbar-track { background: transparent; }
+.form-card__content::-webkit-scrollbar-thumb {
+  background: rgba(30, 123, 224, 0.45);
+  border-radius: 20px;
+}
+.form-card__content::-webkit-scrollbar-thumb:hover {
+  background: rgba(30, 123, 224, 0.70);
+}
+
+@media (max-width: 620px) {
+  body { padding: 1rem 0.75rem; }
+  .form-card { border-radius: 1.5rem; }
+  .form-card__content { padding: 1.75rem 1.25rem 1.5rem; }
+}
+
+
+/* ============================================================
+   3. HEADER
+   ============================================================ */
+.form-header {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(200, 220, 240, 0.7);
+}
+
+.form-header__title {
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #05203d;
+  margin-bottom: 0.35rem;
+  text-shadow:
+    0 2px 8px rgba(255, 255, 255, 1),
+    0 0 18px rgba(255, 255, 255, 0.95);
+}
+
+.form-header__subtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.55;
+  color: #163a5c;
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 1);
+}
+
+.form-header__subtitle strong {
+  color: #003d73;
+  font-weight: 700;
+}
+
+@media (max-width: 620px) {
+  .form-header__title { font-size: 1.6rem; }
+  .form-header__subtitle { font-size: 0.88rem; }
+}
+
+
+/* ============================================================
+   4. GRID & SECTIONS
+   ============================================================ */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.15rem 1.5rem;
+  margin: 1.25rem 0 1rem;
+}
+
+.form-grid__full { grid-column: 1 / -1; }
+
+@media (max-width: 620px) {
+  .form-grid { grid-template-columns: 1fr; gap: 1rem; }
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 16px rgba(0, 20, 40, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: slideIn 0.5s ease both;
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.section-title:first-of-type { margin-top: 0; }
+
+.section-title__icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.section-title > span:last-child {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0b2a4a;
+  letter-spacing: 0.01em;
+}
+
+/* "optional" suffix in section title */
+.section-title__optional {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #5a7b9c;
+  margin-left: 0.25rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+
+/* ============================================================
+   5. LABELS & FIELDS
+   ============================================================ */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  animation: fadeUp 0.45s ease both;
+  position: relative;
+}
+
+.field label,
+.field__label--spaced {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #08213e;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  text-shadow:
+    0 1px 3px rgba(255, 255, 255, 1),
+    0 0 8px rgba(255, 255, 255, 0.95);
+}
+
+.field__label--spaced { margin-top: 0.85rem; }
+
+.required {
+  display: none;
+  color: #c72525;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.field.is-invalid .required {
+  display: inline;
+  animation: pulseRequired 0.9s ease-in-out infinite;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #0b2a4a;
+  background: #ffffff;
+  border: 1.5px solid #d9e4f0;
+  border-radius: 14px;
+  outline: none;
+  box-shadow: 0 3px 12px rgba(0, 20, 40, 0.10);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s, background 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+textarea { resize: vertical; min-height: 85px; }
+
+select {
+  padding-right: 2.5rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #4a7095 50%),
+    linear-gradient(135deg, #4a7095 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) calc(50% - 3px),
+    calc(100% - 14px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+input::placeholder,
+textarea::placeholder { color: #90a4b8; font-weight: 400; }
+
+input:hover,
+select:hover,
+textarea:hover { border-color: #8ab4e0; }
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #1e7be0;
+  box-shadow:
+    0 0 0 4px rgba(30, 123, 224, 0.20),
+    0 3px 12px rgba(0, 20, 40, 0.12);
+  transform: translateY(-1px);
+}
+
+
+/* ============================================================
+   6. FILE UPLOAD
+   ============================================================ */
+.file-drop {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  border: 1.5px dashed #b6cee8;
+  border-radius: 14px;
+  color: #1e3b5c;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0, 20, 40, 0.08);
+  transition: all 0.2s;
+}
+
+.file-drop:hover {
+  border-color: #1e7be0;
+  background: #f5faff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 20, 40, 0.12);
+}
+
+.file-drop.has-file {
+  border-style: solid;
+  border-color: #1e7be0;
+  background: #f0f8ff;
+}
+
+.file-drop__icon {
+  font-size: 1.2rem;
+  padding: 0.35rem 0.5rem;
+  background: #e8f2ff;
+  border-radius: 10px;
+}
+
+.file-drop__text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Optional file drop — never gets red styling */
+.file-drop[data-optional="true"]:hover {
+  border-color: #1e7be0;
+  background: #f5faff;
+}
+
+
+/* ============================================================
+   7. NUMBER STEPPER
+   ============================================================ */
+.stepper {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.stepper__btn {
+  flex: 0 0 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b2a4a;
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 4px 12px rgba(0, 20, 40, 0.20);
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.stepper__btn:hover {
+  background: #123b62;
+  box-shadow: 0 6px 16px rgba(0, 20, 40, 0.28);
+}
+
+.stepper__btn:active { transform: scale(0.92); }
+
+.stepper__btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+.stepper__input {
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.9rem 0.5rem;
+  color: #0b2a4a;
+  background: #ffffff;
+  border: 1.5px solid #d9e4f0;
+  border-radius: 14px;
+  outline: none;
+  box-shadow: 0 3px 12px rgba(0, 20, 40, 0.10);
+  transition: all 0.2s;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.stepper__input::-webkit-outer-spin-button,
+.stepper__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.stepper__input:focus {
+  border-color: #1e7be0;
+  box-shadow:
+    0 0 0 4px rgba(30, 123, 224, 0.20),
+    0 3px 12px rgba(0, 20, 40, 0.12);
+}
+
+.stepper__input::placeholder { color: #90a4b8; font-weight: 500; }
+
+
+/* ============================================================
+   8. AMOUNT TO PAY
+   ============================================================ */
+.amount {
+  position: relative;
+  overflow: hidden;
+  margin-top: 0.75rem;
+  padding: 1.1rem 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0b2a4a 0%, #123b62 100%);
+  color: #ffffff;
+  border: 1.5px solid rgba(30, 123, 224, 0.5);
+  box-shadow:
+    0 14px 32px -10px rgba(11, 42, 74, 0.6),
+    0 0 0 1.5px rgba(30, 123, 224, 0.55) inset;
+  animation: amountPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.amount::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -30%;
+  width: 60%;
+  height: 200%;
+  transform: rotate(15deg);
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.14) 45%,
+    rgba(255, 255, 255, 0.24) 50%,
+    rgba(255, 255, 255, 0.14) 55%,
+    transparent 100%
+  );
+  animation: sheen 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.amount__left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.amount__label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a8d0ff;
+}
+
+.amount__sub {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.amount__value {
+  font-size: 2.3rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 2px 16px rgba(30, 123, 224, 0.75);
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ============================================================
+   9. CONDITIONAL PANELS
+   ============================================================ */
+.conditional {
+  animation: panelReveal 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.conditional__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(200, 224, 255, 0.9);
+  box-shadow: 0 6px 20px rgba(0, 20, 40, 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+
+/* ============================================================
+   10. SIGNATURE PAD
+   ============================================================ */
+.signature { position: relative; width: 100%; }
+
+#signaturePad {
+  display: block;
+  width: 100%;
+  height: 180px;
+  background: #ffffff;
+  border: 1.5px dashed #b6cee8;
+  border-radius: 14px;
+  cursor: crosshair;
+  touch-action: none;
+  box-shadow: 0 3px 12px rgba(0, 20, 40, 0.10);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#signaturePad:hover { border-color: #8ab4e0; }
+
+.signature__clear {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 0.4rem 0.9rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0b2a4a;
+  background: #ffffff;
+  border: 1.5px solid #d9e4f0;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 20, 40, 0.12);
+  transition: all 0.2s;
+}
+
+.signature__clear:hover {
+  background: #f2f8ff;
+  border-color: #1e7be0;
+  color: #0055a0;
+  transform: translateY(-1px);
+}
+
+.signature__clear:active { transform: scale(0.96); }
+
+
+/* ============================================================
+   11. VALIDATION
+   ------------------------------------------------------------
+   ✔ Red asterisk visible only after a failed submit attempt
+   ✔ Red dot (●) visible on the top-left of invalid fields
+   ✔ Red border, hint, and shake all appear together
+   ✔ Optional fields (ID uploads) NEVER get red styling
+   ============================================================ */
+.field__hint {
+  display: none;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #b91c1c;
+  letter-spacing: 0.01em;
+  text-shadow:
+    0 1px 3px rgba(255, 255, 255, 1),
+    0 0 8px rgba(255, 255, 255, 0.95);
+  animation: shake 0.35s ease;
+}
+
+.field.is-invalid .field__hint { display: block; }
+
+/* ---- VISIBLE RED DOT INDICATOR ---- */
+.field.is-invalid::before {
+  content: "●";
+  position: absolute;
+  top: -6px;
+  left: -10px;
+  font-size: 22px;
+  line-height: 1;
+  color: #dc2626;
+  text-shadow:
+    0 0 10px rgba(220, 38, 38, 0.85),
+    0 0 20px rgba(220, 38, 38, 0.45);
+  animation: pulseDot 1.2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Invalid input styling */
+.field.is-invalid input:not([type="file"]),
+.field.is-invalid select,
+.field.is-invalid textarea,
+.field.is-invalid .stepper__input {
+  border-color: #dc2626;
+  background: #fff5f5;
+  box-shadow:
+    0 0 0 3px rgba(220, 38, 38, 0.14),
+    0 3px 12px rgba(0, 20, 40, 0.10);
+  animation: shake 0.4s ease;
+}
+
+.field.is-invalid #signaturePad,
+.field.is-invalid .file-drop {
+  border-color: #dc2626;
+  background: #fff5f5;
+  box-shadow:
+    0 0 0 3px rgba(220, 38, 38, 0.14),
+    0 3px 12px rgba(0, 20, 40, 0.10);
+}
+
+/* Optional field — never gets red dot, border, or shake */
+.field--optional::before,
+.field--optional.is-invalid::before {
+  content: none !important;
+  display: none !important;
+}
+
+.field--optional.is-invalid .file-drop {
+  border-color: #b6cee8;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(0, 20, 40, 0.08);
+  animation: none;
+}
+
+.field--optional.is-invalid label::before {
+  content: none;
+}
+
+.field.is-invalid .stepper__btn {
+  background: #7f1d1d;
+  box-shadow: 0 4px 12px rgba(127, 29, 29, 0.4);
+}
+
+.field.is-invalid .stepper__btn:hover {
+  background: #991b1b;
+  box-shadow: 0 6px 16px rgba(127, 29, 29, 0.5);
+}
+
+.section-title.has-invalid {
+  background: rgba(255, 235, 235, 0.95);
+  border-color: rgba(220, 38, 38, 0.35);
+  box-shadow:
+    0 4px 16px rgba(220, 38, 38, 0.15),
+    0 0 0 1px rgba(220, 38, 38, 0.1) inset;
+  animation: shake 0.5s ease;
+}
+
+.section-title.has-invalid .section-title__icon {
+  filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.6));
+}
+
+.section-title.has-invalid > span:last-child { color: #7f1d1d; }
+
+
+/* ============================================================
+   12. FEE SUMMARY
+   ============================================================ */
+.fee-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.75rem 0 1.25rem;
+  padding: 1.2rem 1.5rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(200, 224, 255, 0.95);
+  box-shadow: 0 8px 24px rgba(0, 20, 40, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeUp 0.55s ease both;
+}
+
+.fee-summary__left {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.fee-summary__icon {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #1e7be0 0%, #0b4fa0 100%);
+  border-radius: 50%;
+  box-shadow: 0 6px 16px rgba(30, 123, 224, 0.45);
+}
+
+.fee-summary__label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #163c60;
+}
+
+.fee-summary__note {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #5a7b9c;
+}
+
+.fee-summary__amount {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #003d73;
+  transition: transform 0.2s;
+}
+
+
+/* ============================================================
+   13. SUBMIT BUTTON
+   ============================================================ */
+.btn-submit {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 1.15rem 1.8rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b2a4a 0%, #123b62 100%);
+  border: none;
+  border-radius: 60px;
+  cursor: pointer;
+  box-shadow: 0 12px 28px -8px rgba(11, 42, 74, 0.55);
+  transition: transform 0.15s, box-shadow 0.25s, background 0.25s;
+}
+
+.btn-submit::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.18),
+    transparent
+  );
+  transition: left 0.6s;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #123b62 0%, #0b2a4a 100%);
+  box-shadow: 0 16px 34px -8px rgba(11, 42, 74, 0.65);
+  transform: translateY(-2px);
+}
+
+.btn-submit:hover:not(:disabled)::after { left: 100%; }
+
+.btn-submit:active:not(:disabled) { transform: translateY(0) scale(0.99); }
+
+.btn-submit:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+.btn-submit__icon { font-size: 1.2rem; line-height: 1; }
+.btn-submit__text { letter-spacing: 0.01em; }
+
+
+/* ============================================================
+   14. SMALL PRINT
+   ============================================================ */
+.small-print {
+  margin-top: 1.4rem;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.55;
+  color: #1f3d5c;
+  text-shadow:
+    0 1px 3px rgba(255, 255, 255, 1),
+    0 0 8px rgba(255, 255, 255, 0.95);
+}
+
+
+/* ============================================================
+   15. ANIMATIONS
+   ============================================================ */
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes bgZoom {
+  from { transform: scale(1.02); }
+  to   { transform: scale(1.08); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes amountPop {
+  0%   { opacity: 0; transform: scale(0.92) translateY(-8px); }
+  60%  { opacity: 1; transform: scale(1.03) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes panelReveal {
+  from { opacity: 0; transform: translateY(-6px); max-height: 0; }
+  to   { opacity: 1; transform: translateY(0); max-height: 500px; }
+}
+
+@keyframes sheen {
+  0%   { left: -60%; }
+  50%  { left: 130%; }
+  100% { left: 130%; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-3px); }
+  40%      { transform: translateX(3px); }
+  60%      { transform: translateX(-2px); }
+  80%      { transform: translateX(2px); }
+}
+
+@keyframes pulseRequired {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.6; transform: scale(1.15); }
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(1.35); }
+}
+
+@keyframes invalidPulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.008); }
+  100% { transform: scale(1); }
+}
+
+
+/* ============================================================
+   16. REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+
+/* ============================================================
+   17. SUBMIT-ATTEMPT GUIDANCE
+   ============================================================ */
+.field.is-invalid { animation: invalidPulse 0.6s ease; }
+
+.field.is-invalid > label::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  margin-right: 0.45rem;
+  border-radius: 3px;
+  background: #c72525;
+  animation: pulseRequired 0.9s ease-in-out infinite;
+}
+
+.field__hint::before {
+  content: "⚠";
+  margin-right: 0.3rem;
+  font-size: 0.85rem;
+  line-height: 1;
+  display: inline-block;
+}
+
+
+/* ============================================================
+   18. ID UPLOADS (optional + conditional)
+   ------------------------------------------------------------
+   ✔ Hidden by default (handled by `hidden` attribute in HTML)
+   ✔ Revealed only when an ID type is selected
+   ✔ Never marked as invalid — no red dot, border, or shake
+   ============================================================ */
+.id-uploads__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+@media (max-width: 620px) {
+  .id-uploads__row { grid-template-columns: 1fr; }
+}
+
+.conditional__note {
+  margin-bottom: 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #1e3b5c;
+  line-height: 1.5;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.95);
+}
+
+.conditional__note strong {
+  color: #003d73;
+}
+
+/* Small "optional" badge next to the labels */
+.optional-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5a7b9c;
+  background: #eef5ff;
+  border: 1px solid #cfe0f5;
+  border-radius: 999px;
+  vertical-align: middle;
+  text-shadow: none;
+}
+
+
+/* ============================================================
+   19. ✅ INLINE THANK-YOU PANEL (replaces redirect)
+   ------------------------------------------------------------
+   Hidden by default via the `hidden` attribute.
+   script.js removes `hidden` and adds `.is-visible` after
+   FormSubmit confirms the POST.
+   ============================================================ */
+.thank-you {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  padding: 2.5rem 1.5rem 2rem;
+  border-radius: 20px;
+  background: linear-gradient(160deg, #ffffff 0%, #f3f9ff 100%);
+  border: 1.5px solid rgba(200, 224, 255, 0.9);
+  box-shadow:
+    0 24px 48px -16px rgba(11, 42, 74, 0.25),
+    0 0 0 1px rgba(30, 123, 224, 0.08) inset;
+  animation: thankYouIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.thank-you.is-visible { display: flex; }
+
+.thank-you__icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  padding: 0.75rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d9f5e4 0%, #b8f0d1 100%);
+  box-shadow: 0 12px 30px -10px rgba(16, 185, 129, 0.6);
+  animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.thank-you__title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #05203d;
+  margin-top: 0.25rem;
+}
+
+.thank-you__message {
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #163a5c;
+  max-width: 520px;
+}
+
+.thank-you__message strong {
+  color: #003d73;
+  font-weight: 700;
+}
+
+.thank-you__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 480px;
+  margin: 0.5rem 0;
+  padding: 1.1rem 1.25rem;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(200, 224, 255, 0.9);
+  box-shadow: 0 6px 20px rgba(0, 20, 40, 0.06);
+}
+
+.thank-you__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed rgba(200, 224, 255, 0.7);
+}
+
+.thank-you__row:last-child { border-bottom: none; }
+
+.thank-you__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5a7b9c;
+  letter-spacing: 0.01em;
+}
+
+.thank-you__value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0b2a4a;
+}
+
+.thank-you__note {
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: #1f3d5c;
+  max-width: 520px;
+}
+
+.thank-you__button {
+  max-width: 340px;
+  margin-top: 0.5rem;
+}
+
+@keyframes thankYouIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes popIn {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thank-you,
+  .thank-you__icon {
+    animation-duration: 0.001ms !important;
+  }
+}
