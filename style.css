@@ -73,7 +73,9 @@ body {
 .form-card__bg {
   position: absolute;
   inset: 0;
-  background-image: url('images/Image.png');
+  background-image:
+    url('images/image.png'),
+    linear-gradient(135deg, #e8f1fb 0%, #f5f9ff 50%, #eef5ff 100%);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
