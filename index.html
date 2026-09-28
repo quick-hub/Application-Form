@@ -33,30 +33,17 @@
         </p>
       </header>
 
-      <!-- ============================================================
-           FORM — FormSubmit.co integration
-           ------------------------------------------------------------
-           • action/method/enctype are a no-JS fallback only.
-           • script.js submits with fetch() to
-             https://formsubmit.co/ajax/Cjsind90@gmail.com
-             and shows the thank-you panel only on a confirmed success.
-           • `novalidate` lets script.js show the custom red-dot
-             validation instead of the browser's default bubbles.
-           • No `_next` → no redirect anywhere.
-           ============================================================ -->
+      <!-- FormSubmit receives these fields as multipart form data. -->
       <form
-        action="https://formsubmit.co/Cjsind90@gmail.com"
+        action="https://formsubmit.co/8fce79b2573d337f83887541ecc1c695"
         method="POST"
         enctype="multipart/form-data"
         id="houseAppForm"
         novalidate
       >
-        <!-- ==================================================
-             FormSubmit configuration
-             ================================================== -->
-        <input type="hidden" name="_captcha"  value="false">
         <input type="hidden" name="_subject"  value="New Application Form Submission">
         <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_next" id="nextUrl" value="">
         <input type="hidden" name="_replyto"  id="_replyto" value="">
         <input type="text"   name="_honey"    style="display:none" tabindex="-1" autocomplete="off">
 
@@ -64,6 +51,7 @@
              App state
              ================================================== -->
         <input type="hidden" name="application_fee" id="feeHidden" value="$50.00 USD (1 occupant)">
+        <input type="file" name="signature" id="signatureUpload" accept="image/png" hidden>
 
         <div class="form-grid">
 
@@ -457,11 +445,11 @@
           </h2>
 
           <div class="field form-grid__full">
-            <label for="signaturePad">
+            <span class="field__label" id="signatureLabel">
               Sign below <span class="required">*</span>
-            </label>
+            </span>
             <div class="signature">
-              <canvas id="signaturePad" width="600" height="180"></canvas>
+              <canvas id="signaturePad" width="600" height="180" aria-labelledby="signatureLabel" role="img"></canvas>
               <button type="button" id="clearSignature" class="signature__clear">Clear</button>
             </div>
             <span class="field__hint" id="signatureHint">Please provide your signature.</span>
@@ -487,12 +475,8 @@
         </p>
       </form>
 
-      <!-- ============================================================
+     <!-- ============================================================
            ✅ INLINE THANK-YOU PANEL
-           ------------------------------------------------------------
-           Shows ONLY:
-             "Thank you, [Name]! Your application has been submitted successfully."
-           No redirect, no destination email, no summary.
            ============================================================ -->
       <section class="thank-you" id="thankYouPanel" hidden aria-live="polite">
         <div class="thank-you__icon">✅</div>
