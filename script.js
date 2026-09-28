@@ -11,11 +11,11 @@
    - signature capture
    - validation
   - multipart submission to FormSubmit.co
-  - FormSubmit's generated confirmation page
+  - local thank-you panel after FormSubmit redirects back
    ------------------------------------------------------------
    ANTI-SPAM:
-     • FormSubmit's CAPTCHA remains enabled (do not set _captcha=false).
-     • The honeypot field rejects submissions from simple bots.
+    • FormSubmit CAPTCHA is disabled by the form's _captcha=false field.
+    • The honeypot field can still reject simple bot submissions.
      • Inbox placement depends on sender authentication and reputation;
        client-side code cannot guarantee it.
    ============================================================ */
@@ -596,8 +596,8 @@
         console.warn("Could not preserve applicant name for confirmation.", err);
       }
 
-      // Submit all three distinct file fields as native multipart data.
-      // FormSubmit then displays its generated confirmation page.
+      // Submit distinct multipart file fields; _next returns to this page
+      // where the submitted flag reveals the thank-you panel.
       HTMLFormElement.prototype.submit.call(form);
     } catch (err) {
       console.error("Submission failed:", err);
