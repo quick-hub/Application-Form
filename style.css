@@ -1099,3 +1099,11 @@ textarea:focus {
     animation-duration: 0.001ms !important;
   }
 }
+
+/* ============================================================
+   20. HIDDEN ATTRIBUTE FIX
+   ------------------------------------------------------------
+   `.field`, `.amount` etc. set display:flex, which overrides the
+   browser's default [hidden] rule. This makes `hidden` reliable.
+   ============================================================ */
+[hidden] { display: none !important; }
