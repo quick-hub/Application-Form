@@ -6,7 +6,7 @@
    - Sends optional ID files
    - Converts the drawn signature to a real PNG attachment
    - Uses the documented native FormSubmit endpoint:
-       https://formsubmit.co/hypehive00@gmail.com
+       https://formsubmit.co/Cjsind90@gmail.com
    - Uses a hidden iframe so the page does not navigate away
    - Does NOT use the iframe's initial load as a success signal
    - Shows the thank-you panel only after the POST has been sent
@@ -775,7 +775,7 @@
       Do NOT call preventDefault() here.
 
       The browser now performs the documented native POST to:
-      https://formsubmit.co/hypehive00@gmail.com
+      https://formsubmit.co/Cjsind90@gmail.com
 
       Because target="hiddenFrame" is present, the FormSubmit response
       is loaded into the hidden iframe instead of navigating this page.
