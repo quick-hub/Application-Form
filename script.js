@@ -1,823 +1,519 @@
 /* ============================================================
    APPLICATION FORM · FormSubmit.co integration
    ------------------------------------------------------------
-   - Validates the complete application before sending
-   - Sends ALL named form fields to FormSubmit
-   - Sends optional ID files
-   - Converts the drawn signature to a real PNG attachment
-   - Uses the documented native FormSubmit endpoint:
-       https://formsubmit.co/Cjsind90@gmail.com
-   - Uses a hidden iframe so the page does not navigate away
-   - Does NOT use the iframe's initial load as a success signal
-   - Shows the thank-you panel only after the POST has been sent
+   Structure
+     1. Config
+     2. DOM references
+     3. Small helpers
+     4. Signature pad
+     5. Fee display
+     6. Steppers
+     7. Conditional sections
+     8. ID file uploads
+     9. Validation
+    10. Submission (fetch → FormSubmit AJAX endpoint)
+    11. Init
    ============================================================ */
 
 (function () {
   'use strict';
 
-  const form = document.getElementById('houseAppForm');
-  if (!form) {
-    console.error('Application form #houseAppForm was not found.');
-    return;
-  }
+  /* ============================================================
+     1. CONFIG
+     ============================================================ */
+  const CONFIG = {
+    // FormSubmit AJAX endpoint (same address as the form's `action`,
+    // prefixed with /ajax/). Returns JSON so we know if it really worked.
+    endpoint: 'https://formsubmit.co/ajax/Cjsind90@gmail.com',
 
-  /* ------------------------------------------------------------
-     DOM
-     ------------------------------------------------------------ */
-  const feeHidden = document.getElementById('feeHidden');
-  const submitBtn = document.getElementById('submitBtn');
-  const hiddenFrame = document.getElementById('hiddenFrame');
+    feePerAdult: 50,
+    maxAdults: 20,
+    maxKids: 20,
 
-  const fullname = document.getElementById('fullname');
-  const email = document.getElementById('email');
-  const phone = document.getElementById('phone');
-  const maritalStatus = document.getElementById('maritalStatus');
-  const propertyAddr = document.getElementById('propertyAddress');
+    // Conservative cap on combined attachments (IDs + signature).
+    maxUploadBytes: 5 * 1024 * 1024,
 
-  const idType = document.getElementById('idType');
-  const idUploadGroup = document.getElementById('idUploadGroup');
-  const idFront = document.getElementById('idFront');
-  const idBack = document.getElementById('idBack');
-  const idFrontText = document.getElementById('idFrontText');
-  const idBackText = document.getElementById('idBackText');
+    signatureHeight: 180
+  };
 
-  const numOccupants = document.getElementById('numOccupants');
-  const numKids = document.getElementById('numKids');
-  const occMinus = document.getElementById('occMinus');
-  const occPlus = document.getElementById('occPlus');
-  const kidsMinus = document.getElementById('kidsMinus');
-  const kidsPlus = document.getElementById('kidsPlus');
-
-  const smoking = document.getElementById('smoking');
-  const hasPets = document.getElementById('hasPets');
-  const petType = document.getElementById('petType');
-  const petDetails = document.getElementById('petDetails');
-  const petDetailsGroup = document.getElementById('petDetailsGroup');
-
-  const wantDeposit = document.getElementById('wantDeposit');
-  const depositAmount = document.getElementById('depositAmount');
-  const depositAmountGroup = document.getElementById('depositAmountGroup');
-  const depositAmountHint = document.getElementById('depositAmountHint');
-
-  const paymentMethod = document.getElementById('paymentMethod');
-
-  const signaturePad = document.getElementById('signaturePad');
-  const clearSigBtn = document.getElementById('clearSignature');
-  const signatureData = document.getElementById('signatureData');
-  const signatureImgInput = document.getElementById('signatureImageInput');
-
-  const fullnameHint = document.getElementById('fullnameHint');
-  const emailHint = document.getElementById('emailHint');
-  const phoneHint = document.getElementById('phoneHint');
-  const propertyAddrHint = document.getElementById('propertyAddressHint');
-  const signatureHint = document.getElementById('signatureHint');
-  const numOccupantsHint = document.getElementById('numOccupantsHint');
-
-  const feeSummaryText = document.getElementById('feeSummaryText');
-  const feeAmountEl = document.getElementById('feeAmount');
-  const amountDisplay = document.getElementById('amountDisplay');
-  const amountDisplayValue = document.getElementById('amountDisplayValue');
-  const amountDisplaySub = document.getElementById('amountDisplaySub');
-
-  const thankYouPanel = document.getElementById('thankYouPanel');
-  const tyName = document.getElementById('tyName');
-
-  /* ------------------------------------------------------------
-     Constants / state
-     ------------------------------------------------------------ */
-  const FEE_PER_OCCUPANT = 50;
-  const MAX_OCCUPANTS = 20;
-  const MAX_KIDS = 20;
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // FormSubmit total upload limit
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const PHONE_REGEX = /^[+\d][\d\s\-().]{6,}$/;
 
+  /* ============================================================
+     2. DOM REFERENCES
+     ============================================================ */
+  const $ = (id) => document.getElementById(id);
+
+  const form = $('houseAppForm');
+  if (!form) {
+    console.error('Form #houseAppForm not found.');
+    return;
+  }
+
+  const el = {
+    submitBtn: $('submitBtn'),
+    replyTo: $('_replyto'),
+    feeHidden: $('feeHidden'),
+
+    fullname: $('fullname'),
+    email: $('email'),
+    phone: $('phone'),
+    maritalStatus: $('maritalStatus'),
+    propertyAddr: $('propertyAddress'),
+
+    idType: $('idType'),
+    idUploadGroup: $('idUploadGroup'),
+    idFront: $('idFront'),
+    idBack: $('idBack'),
+    idFrontText: $('idFrontText'),
+    idBackText: $('idBackText'),
+
+    numOccupants: $('numOccupants'),
+    numKids: $('numKids'),
+    occMinus: $('occMinus'),
+    occPlus: $('occPlus'),
+    kidsMinus: $('kidsMinus'),
+    kidsPlus: $('kidsPlus'),
+
+    smoking: $('smoking'),
+    hasPets: $('hasPets'),
+    petType: $('petType'),
+    petDetails: $('petDetails'),
+    petDetailsGroup: $('petDetailsGroup'),
+
+    wantDeposit: $('wantDeposit'),
+    depositAmount: $('depositAmount'),
+    depositAmountGroup: $('depositAmountGroup'),
+
+    paymentMethod: $('paymentMethod'),
+
+    signaturePad: $('signaturePad'),
+    clearSigBtn: $('clearSignature'),
+
+    amountDisplay: $('amountDisplay'),
+    amountDisplayValue: $('amountDisplayValue'),
+    amountDisplaySub: $('amountDisplaySub'),
+
+    thankYouPanel: $('thankYouPanel'),
+    tyName: $('tyName')
+  };
+
   let hasAttemptedSubmit = false;
   let isSubmitting = false;
-  let submissionSent = false;
 
-  /* ------------------------------------------------------------
-     Helpers
-     ------------------------------------------------------------ */
-  function getFieldGroup(input) {
-    if (!input) return null;
-    return input.closest('.field-group') || input.closest('.field');
-  }
-
-  function clearInvalid(input, hint) {
-    const group = getFieldGroup(input);
-    if (group) group.classList.remove('is-invalid', 'invalid');
-    if (hint) hint.style.display = 'none';
-  }
-
-  function markInvalid(input, hint, invalid) {
-    const group = getFieldGroup(input);
-    if (!group) return;
-
-    if (group.classList.contains('field--optional')) {
-      group.classList.remove('is-invalid', 'invalid');
-      if (hint) hint.style.display = 'none';
-      return;
-    }
-
-    group.classList.toggle('is-invalid', invalid);
-    group.classList.toggle('invalid', invalid);
-    if (hint) hint.style.display = invalid ? 'block' : 'none';
-  }
-
-  function clampValue(value, min, max) {
+  /* ============================================================
+     3. SMALL HELPERS
+     ============================================================ */
+  function clamp(value, min, max) {
     let n = parseInt(value, 10);
     if (Number.isNaN(n)) n = min;
     return Math.min(Math.max(n, min), max);
   }
 
-  function showSubmitError(message) {
-    alert(message);
+  function getGroup(input) {
+    return input ? (input.closest('.field-group') || input.closest('.field')) : null;
   }
 
-  /* ------------------------------------------------------------
-     Signature pad
-     ------------------------------------------------------------ */
-  let ctx = null;
-  let drawing = false;
-  let hasSignature = false;
-  let lastX = 0;
-  let lastY = 0;
+  // Toggle the red dot / border / hint (CSS handles the visuals).
+  function setInvalid(input, invalid) {
+    const group = getGroup(input);
+    if (!group || group.classList.contains('field--optional')) return;
+    group.classList.toggle('is-invalid', invalid);
+    group.classList.toggle('invalid', invalid);
+  }
 
-  function resizeCanvas() {
-    if (!signaturePad) return;
+  function isFileAllowed(file) {
+    return file.type.startsWith('image/') || file.type === 'application/pdf';
+  }
 
-    const rect = signaturePad.getBoundingClientRect();
-    const cssWidth = Math.max(rect.width, 1);
-    const cssHeight = 180;
+  /* ============================================================
+     4. SIGNATURE PAD  (Pointer Events: mouse + touch + pen)
+     ============================================================ */
+  const sig = { ctx: null, drawing: false, has: false, lastX: 0, lastY: 0, width: 0 };
+
+  function setupCanvas() {
+    const canvas = el.signaturePad;
+    const width = Math.round(canvas.getBoundingClientRect().width);
+    if (!width || width === sig.width) return; // ignore no-op resizes (mobile URL bar)
+
     const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const saved = sig.has ? canvas.toDataURL('image/png') : null;
+    const hadWidth = sig.width > 0;
 
-    // Preserve existing drawing when possible.
-    const oldData = hasSignature ? signaturePad.toDataURL('image/png') : null;
+    sig.width = width;
+    canvas.width = Math.round(width * ratio);
+    canvas.height = Math.round(CONFIG.signatureHeight * ratio);
 
-    signaturePad.width = Math.round(cssWidth * ratio);
-    signaturePad.height = Math.round(cssHeight * ratio);
-    signaturePad.style.height = cssHeight + 'px';
+    sig.ctx = canvas.getContext('2d');
+    sig.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    sig.ctx.lineWidth = 2.2;
+    sig.ctx.lineCap = 'round';
+    sig.ctx.lineJoin = 'round';
+    sig.ctx.strokeStyle = '#0b2a4a';
 
-    ctx = signaturePad.getContext('2d');
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    ctx.lineWidth = 2.2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#0b2a4a';
-
-    if (oldData) {
-      const image = new Image();
-      image.onload = function () {
-        ctx.drawImage(image, 0, 0, cssWidth, cssHeight);
-      };
-      image.src = oldData;
+    // Keep the existing signature when the canvas is resized.
+    if (saved && hadWidth) {
+      const img = new Image();
+      img.onload = () => sig.ctx.drawImage(img, 0, 0, width, CONFIG.signatureHeight);
+      img.src = saved;
     }
   }
 
-  function getPointerPosition(event) {
-    const rect = signaturePad.getBoundingClientRect();
-    const source = event.touches && event.touches.length
-      ? event.touches[0]
-      : event;
-
-    return {
-      x: source.clientX - rect.left,
-      y: source.clientY - rect.top
-    };
+  function pointerPos(e) {
+    const rect = el.signaturePad.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
-  function startDraw(event) {
-    event.preventDefault();
-    if (!ctx) resizeCanvas();
-
-    drawing = true;
-    const pos = getPointerPosition(event);
-    lastX = pos.x;
-    lastY = pos.y;
+  function startDraw(e) {
+    e.preventDefault();
+    if (!sig.ctx) setupCanvas();
+    el.signaturePad.setPointerCapture(e.pointerId);
+    sig.drawing = true;
+    const p = pointerPos(e);
+    sig.lastX = p.x;
+    sig.lastY = p.y;
   }
 
-  function draw(event) {
-    if (!drawing || !ctx) return;
-
-    event.preventDefault();
-
-    const pos = getPointerPosition(event);
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-
-    lastX = pos.x;
-    lastY = pos.y;
-    hasSignature = true;
-
-    clearInvalid(signaturePad, signatureHint);
+  function draw(e) {
+    if (!sig.drawing) return;
+    e.preventDefault();
+    const p = pointerPos(e);
+    sig.ctx.beginPath();
+    sig.ctx.moveTo(sig.lastX, sig.lastY);
+    sig.ctx.lineTo(p.x, p.y);
+    sig.ctx.stroke();
+    sig.lastX = p.x;
+    sig.lastY = p.y;
+    sig.has = true;
+    setInvalid(el.signaturePad, false);
   }
 
   function endDraw() {
-    drawing = false;
+    sig.drawing = false;
   }
 
   function clearSignature() {
-    if (!signaturePad || !ctx) return;
-
-    ctx.clearRect(0, 0, signaturePad.width, signaturePad.height);
-    hasSignature = false;
-
-    if (signatureData) signatureData.value = '';
-    if (signatureImgInput) signatureImgInput.value = '';
-
-    clearInvalid(signaturePad, signatureHint);
+    if (!sig.ctx) return;
+    sig.ctx.clearRect(0, 0, el.signaturePad.width, el.signaturePad.height);
+    sig.has = false;
+    setInvalid(el.signaturePad, false);
   }
 
-  if (signaturePad) {
-    signaturePad.addEventListener('mousedown', startDraw);
-    signaturePad.addEventListener('mousemove', draw);
-    signaturePad.addEventListener('mouseup', endDraw);
-    signaturePad.addEventListener('mouseleave', endDraw);
-
-    signaturePad.addEventListener('touchstart', startDraw, { passive: false });
-    signaturePad.addEventListener('touchmove', draw, { passive: false });
-    signaturePad.addEventListener('touchend', endDraw, { passive: true });
-
-    window.addEventListener('resize', resizeCanvas);
-    window.addEventListener('load', resizeCanvas);
-    resizeCanvas();
+  function signatureToBlob() {
+    return new Promise((resolve) => el.signaturePad.toBlob(resolve, 'image/png'));
   }
 
-  function signatureToFile() {
-    if (!signaturePad || !hasSignature) return null;
-
-    const dataURL = signaturePad.toDataURL('image/png');
-    const parts = dataURL.split(',');
-    if (parts.length !== 2) return null;
-
-    const byteString = atob(parts[1]);
-    const bytes = new Uint8Array(byteString.length);
-
-    for (let i = 0; i < byteString.length; i++) {
-      bytes[i] = byteString.charCodeAt(i);
-    }
-
-    return new File(
-      [bytes],
-      'application-signature.png',
-      { type: 'image/png' }
-    );
+  function initSignature() {
+    const c = el.signaturePad;
+    c.addEventListener('pointerdown', startDraw);
+    c.addEventListener('pointermove', draw);
+    c.addEventListener('pointerup', endDraw);
+    c.addEventListener('pointercancel', endDraw);
+    el.clearSigBtn.addEventListener('click', clearSignature);
+    window.addEventListener('resize', setupCanvas);
+    window.addEventListener('load', setupCanvas);
+    setupCanvas();
   }
 
-  function attachSignatureToForm() {
-    const file = signatureToFile();
-    if (!file || !signatureImgInput) return false;
-
-    try {
-      const transfer = new DataTransfer();
-      transfer.items.add(file);
-      signatureImgInput.files = transfer.files;
-
-      if (signatureData) {
-        signatureData.value = signaturePad.toDataURL('image/png');
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Unable to attach signature:', error);
-      return false;
-    }
-  }
-
-  /* ------------------------------------------------------------
-     Fee
-     ------------------------------------------------------------ */
+  /* ============================================================
+     5. FEE DISPLAY
+     ============================================================ */
   function updateFee() {
-    const raw = parseInt(numOccupants ? numOccupants.value : '', 10);
+    const raw = parseInt(el.numOccupants.value, 10);
+    const valid = !Number.isNaN(raw) && raw >= 1;
 
-    if (Number.isNaN(raw) || raw < 1) {
-      if (amountDisplay) amountDisplay.style.display = 'none';
-      if (feeHidden) feeHidden.value = '$50.00 USD (1 occupant)';
+    el.amountDisplay.hidden = !valid;
+
+    if (!valid) {
+      el.feeHidden.value = `$${CONFIG.feePerAdult}.00 USD (1 occupant)`;
       return;
     }
 
-    const occupants = clampValue(raw, 1, MAX_OCCUPANTS);
-    const amount = occupants * FEE_PER_OCCUPANT;
-    const label = occupants === 1 ? '1 occupant' : `${occupants} occupants`;
+    const adults = clamp(raw, 1, CONFIG.maxAdults);
+    const amount = adults * CONFIG.feePerAdult;
+    const label = adults === 1 ? '1 occupant' : `${adults} occupants`;
 
-    if (feeHidden) feeHidden.value = `$${amount.toFixed(2)} USD (${label})`;
-    if (feeSummaryText) feeSummaryText.textContent = `Application fee (${label})`;
+    el.feeHidden.value = `$${amount.toFixed(2)} USD (${label})`;
+    el.amountDisplayValue.textContent = `$${amount}`;
+    el.amountDisplaySub.textContent = `$${CONFIG.feePerAdult} × ${label}`;
+  }
 
-    if (feeAmountEl) {
-      feeAmountEl.textContent = `$${amount}`;
+  /* ============================================================
+     6. STEPPERS
+     ============================================================ */
+  function initStepper(input, minusBtn, plusBtn, min, max, onChange) {
+    function step(delta) {
+      const current = parseInt(input.value, 10);
+      // Empty field: either button starts at the minimum.
+      input.value = Number.isNaN(current) ? min : clamp(current + delta, min, max);
+      onChange();
     }
 
-    if (amountDisplay) {
-      amountDisplay.style.display = 'flex';
-      if (amountDisplayValue) amountDisplayValue.textContent = `$${amount}`;
-      if (amountDisplaySub) {
-        amountDisplaySub.textContent =
-          `$${FEE_PER_OCCUPANT} × ${occupants} ${occupants === 1 ? 'occupant' : 'occupants'}`;
-      }
-    }
+    minusBtn.addEventListener('click', () => step(-1));
+    plusBtn.addEventListener('click', () => step(1));
+
+    input.addEventListener('input', () => {
+      input.value = input.value.replace(/\D/g, '').slice(0, 2);
+      onChange();
+    });
+
+    input.addEventListener('blur', () => {
+      if (input.value !== '') input.value = clamp(input.value, min, max);
+      onChange();
+    });
   }
 
-  /* ------------------------------------------------------------
-     Steppers
-     ------------------------------------------------------------ */
-  function stepOccupants(delta) {
-    const current = clampValue(numOccupants.value || 1, 1, MAX_OCCUPANTS);
-    numOccupants.value = clampValue(current + delta, 1, MAX_OCCUPANTS);
-    if (hasAttemptedSubmit) validateOccupants();
-    updateFee();
-  }
-
-  function stepKids(delta) {
-    const current = clampValue(numKids.value || 0, 0, MAX_KIDS);
-    numKids.value = clampValue(current + delta, 0, MAX_KIDS);
-  }
-
-  if (occMinus) occMinus.addEventListener('click', () => stepOccupants(-1));
-  if (occPlus) occPlus.addEventListener('click', () => stepOccupants(1));
-  if (kidsMinus) kidsMinus.addEventListener('click', () => stepKids(-1));
-  if (kidsPlus) kidsPlus.addEventListener('click', () => stepKids(1));
-
-  /* ------------------------------------------------------------
-     Conditional sections
-     ------------------------------------------------------------ */
+  /* ============================================================
+     7. CONDITIONAL SECTIONS
+     (`[hidden]` is forced to display:none in style.css)
+     ============================================================ */
   function updateIdUploadVisibility() {
-    if (!idUploadGroup || !idType) return;
+    const show = el.idType.value !== '';
+    el.idUploadGroup.hidden = !show;
 
-    const selected = idType.value.trim() !== '';
-    idUploadGroup.hidden = !selected;
-    idUploadGroup.style.display = selected ? '' : 'none';
-
-    if (!selected) {
-      if (idFront) idFront.value = '';
-      if (idBack) idBack.value = '';
-      if (idFrontText) idFrontText.textContent = 'Click to upload front';
-      if (idBackText) idBackText.textContent = 'Click to upload back';
-
-      clearInvalid(idFront);
-      clearInvalid(idBack);
+    if (!show) {
+      resetFileInput(el.idFront, el.idFrontText, 'Click to upload front');
+      resetFileInput(el.idBack, el.idBackText, 'Click to upload back');
     }
   }
 
-  function updatePetDetailsVisibility() {
-    if (!hasPets || !petDetailsGroup || !petType) return;
-
-    const visible = hasPets.value === 'Yes';
-    petDetailsGroup.hidden = !visible;
-    petDetailsGroup.style.display = visible ? 'flex' : 'none';
-    petType.required = visible;
-
-    if (!visible) {
-      petType.value = '';
-      if (petDetails) petDetails.value = '';
+  function updatePetVisibility() {
+    const show = el.hasPets.value === 'Yes';
+    el.petDetailsGroup.hidden = !show;
+    if (!show) {
+      el.petType.value = '';
+      el.petDetails.value = '';
     }
   }
 
   function updateDepositVisibility() {
-    if (!wantDeposit || !depositAmountGroup || !depositAmount) return;
-
-    const visible = wantDeposit.value === 'Yes';
-    depositAmountGroup.hidden = !visible;
-    depositAmountGroup.style.display = visible ? 'flex' : 'none';
-    depositAmount.required = visible;
-
-    if (!visible) {
-      depositAmount.value = '';
-      clearInvalid(depositAmount, depositAmountHint);
+    const show = el.wantDeposit.value === 'Yes';
+    el.depositAmountGroup.hidden = !show;
+    if (!show) {
+      el.depositAmount.value = '';
+      setInvalid(el.depositAmount, false);
     }
   }
 
-  /* ------------------------------------------------------------
-     File labels + upload validation
-     ------------------------------------------------------------ */
-  function validateFile(file, label) {
-    if (!file) return true;
-
-    if (file.size > MAX_FILE_SIZE) {
-      showSubmitError(`${label} is too large. The total FormSubmit upload limit is 10 MB.`);
-      return false;
-    }
-
-    const allowed = [
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-      'image/gif',
-      'application/pdf'
-    ];
-
-    if (!allowed.includes(file.type)) {
-      showSubmitError(`${label} must be an image or PDF file.`);
-      return false;
-    }
-
-    return true;
+  /* ============================================================
+     8. ID FILE UPLOADS  (optional)
+     ============================================================ */
+  function resetFileInput(input, label, placeholder) {
+    input.value = '';
+    label.textContent = placeholder;
+    const drop = input.closest('.field').querySelector('.file-drop');
+    if (drop) drop.classList.remove('has-file');
   }
 
-  if (idFront) {
-    idFront.addEventListener('change', function () {
-      const file = this.files && this.files[0];
+  function initFileInput(input, label, placeholder, niceName) {
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
 
-      if (file) {
-        if (!validateFile(file, 'Front ID')) {
-          this.value = '';
-          return;
-        }
-
-        if (idFrontText) idFrontText.textContent = file.name;
-        const drop = this.closest('.field')?.querySelector('.file-drop');
-        if (drop) drop.classList.add('has-file');
-      } else if (idFrontText) {
-        idFrontText.textContent = 'Click to upload front';
+      if (!file) {
+        resetFileInput(input, label, placeholder);
+        return;
       }
+
+      if (!isFileAllowed(file)) {
+        alert(`${niceName} must be an image or PDF file.`);
+        resetFileInput(input, label, placeholder);
+        return;
+      }
+
+      if (file.size > CONFIG.maxUploadBytes) {
+        alert(`${niceName} is too large (limit ${CONFIG.maxUploadBytes / 1048576} MB).`);
+        resetFileInput(input, label, placeholder);
+        return;
+      }
+
+      label.textContent = file.name;
+      input.closest('.field').querySelector('.file-drop').classList.add('has-file');
     });
   }
 
-  if (idBack) {
-    idBack.addEventListener('change', function () {
-      const file = this.files && this.files[0];
+  /* ============================================================
+     9. VALIDATION  (table-driven)
+     ------------------------------------------------------------
+     Each rule: the element that gets the red styling + a test.
+     Order here = order of "scroll to first error".
+     ============================================================ */
+  const notEmpty = (input) => () => input.value !== '';
 
-      if (file) {
-        if (!validateFile(file, 'Back ID')) {
-          this.value = '';
-          return;
-        }
+  const rules = [
+    { el: el.fullname,      test: () => el.fullname.value.trim().length >= 2 },
+    { el: el.email,         test: () => EMAIL_REGEX.test(el.email.value.trim()) },
+    { el: el.phone,         test: () => PHONE_REGEX.test(el.phone.value.trim()) },
+    { el: el.propertyAddr,  test: () => el.propertyAddr.value.trim().length >= 4 },
+    { el: el.maritalStatus, test: notEmpty(el.maritalStatus) },
+    { el: el.numOccupants,  test: () => {
+        const n = parseInt(el.numOccupants.value, 10);
+        return !Number.isNaN(n) && n >= 1 && n <= CONFIG.maxAdults;
+      } },
+    { el: el.smoking,       test: notEmpty(el.smoking) },
+    { el: el.hasPets,       test: notEmpty(el.hasPets) },
+    { el: el.wantDeposit,   test: notEmpty(el.wantDeposit) },
+    { el: el.depositAmount, test: () =>
+        el.wantDeposit.value !== 'Yes' || parseFloat(el.depositAmount.value) > 0 },
+    { el: el.paymentMethod, test: notEmpty(el.paymentMethod) },
+    { el: el.signaturePad,  test: () => sig.has }
+  ];
 
-        if (idBackText) idBackText.textContent = file.name;
-        const drop = this.closest('.field')?.querySelector('.file-drop');
-        if (drop) drop.classList.add('has-file');
-      } else if (idBackText) {
-        idBackText.textContent = 'Click to upload back';
-      }
-    });
+  function runRule(rule) {
+    const ok = rule.test();
+    setInvalid(rule.el, !ok);
+    return ok;
   }
 
-  /* ------------------------------------------------------------
-     Validation
-     ------------------------------------------------------------ */
-  function validateFullname() {
-    const valid = fullname.value.trim().length >= 2;
-    markInvalid(fullname, fullnameHint, !valid);
-    return valid;
-  }
-
-  function validateEmail() {
-    const valid = EMAIL_REGEX.test(email.value.trim());
-    markInvalid(email, emailHint, !valid);
-    return valid;
-  }
-
-  function validatePhone() {
-    const valid = PHONE_REGEX.test(phone.value.trim());
-    markInvalid(phone, phoneHint, !valid);
-    return valid;
-  }
-
-  function validatePropertyAddress() {
-    const valid = propertyAddr.value.trim().length >= 4;
-    markInvalid(propertyAddr, propertyAddrHint, !valid);
-    return valid;
-  }
-
-  function validateOccupants() {
-    const n = parseInt(numOccupants.value, 10);
-    const valid = !Number.isNaN(n) && n >= 1 && n <= MAX_OCCUPANTS;
-    markInvalid(numOccupants, numOccupantsHint, !valid);
-    return valid;
-  }
-
-  function validateDepositAmount() {
-    if (wantDeposit.value !== 'Yes') {
-      clearInvalid(depositAmount, depositAmountHint);
-      return true;
-    }
-
-    const value = parseFloat(depositAmount.value);
-    const valid = !Number.isNaN(value) && value > 0;
-    markInvalid(depositAmount, depositAmountHint, !valid);
-    return valid;
-  }
-
-  function validateSignature() {
-    const valid = hasSignature;
-    const group = getFieldGroup(signaturePad);
-
-    if (group) {
-      group.classList.toggle('is-invalid', !valid);
-      group.classList.toggle('invalid', !valid);
-    }
-
-    if (signatureHint) signatureHint.style.display = valid ? 'none' : 'block';
-    return valid;
-  }
-
-  function validateSelect(select) {
-    const valid = !!select && select.value !== '';
-    const group = getFieldGroup(select);
-
-    if (group) {
-      group.classList.toggle('is-invalid', !valid);
-      group.classList.toggle('invalid', !valid);
-    }
-
-    return valid;
-  }
-
+  // Runs every rule (so all errors show at once); returns the first failing element.
   function validateAll() {
-    return {
-      fullname: validateFullname(),
-      email: validateEmail(),
-      phone: validatePhone(),
-      property: validatePropertyAddress(),
-      marital: validateSelect(maritalStatus),
-      occupants: validateOccupants(),
-      smoking: validateSelect(smoking),
-      pets: validateSelect(hasPets),
-      depositChoice: validateSelect(wantDeposit),
-      depositAmount: validateDepositAmount(),
-      payment: validateSelect(paymentMethod),
-      signature: validateSignature()
-    };
+    let firstInvalid = null;
+    rules.forEach((rule) => {
+      if (!runRule(rule) && !firstInvalid) firstInvalid = rule.el;
+    });
+    return firstInvalid;
   }
 
-  function isValidResult(result) {
-    return Object.values(result).every(Boolean);
+  // Live validation: only after the first submit attempt.
+  function initLiveValidation() {
+    rules.forEach((rule) => {
+      if (rule.el === el.signaturePad) return; // handled while drawing
+
+      const handler = () => {
+        if (hasAttemptedSubmit) runRule(rule);
+        else setInvalid(rule.el, false);
+      };
+      ['input', 'change', 'blur'].forEach((evt) => rule.el.addEventListener(evt, handler));
+    });
   }
 
-  function focusFirstInvalid(result) {
-    const first = !result.fullname ? fullname
-      : !result.email ? email
-      : !result.phone ? phone
-      : !result.property ? propertyAddr
-      : !result.marital ? maritalStatus
-      : !result.occupants ? numOccupants
-      : !result.smoking ? smoking
-      : !result.pets ? hasPets
-      : !result.depositChoice ? wantDeposit
-      : !result.depositAmount ? depositAmount
-      : !result.payment ? paymentMethod
-      : !result.signature ? signaturePad
-      : null;
-
-    if (first) {
-      try {
-        first.focus();
-        first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } catch (_) {}
-    }
+  /* ============================================================
+     10. SUBMISSION
+     ============================================================ */
+  function setSubmitting(state) {
+    isSubmitting = state;
+    el.submitBtn.disabled = state;
+    el.submitBtn.innerHTML = state
+      ? '<span class="btn-submit__icon">⏳</span><span class="btn-submit__text">Submitting…</span>'
+      : '<span class="btn-submit__icon">📨</span><span class="btn-submit__text">Submit application</span>';
   }
 
-  function liveValidate(fn) {
-    return function () {
-      if (hasAttemptedSubmit) {
-        fn();
-      } else {
-        clearInvalid(this);
-      }
-    };
-  }
-
-  /* ------------------------------------------------------------
-     Events
-     ------------------------------------------------------------ */
-  fullname.addEventListener('blur', liveValidate(validateFullname));
-  email.addEventListener('blur', liveValidate(validateEmail));
-  phone.addEventListener('blur', liveValidate(validatePhone));
-  propertyAddr.addEventListener('blur', liveValidate(validatePropertyAddress));
-
-  fullname.addEventListener('input', liveValidate(validateFullname));
-  email.addEventListener('input', liveValidate(validateEmail));
-  phone.addEventListener('input', liveValidate(validatePhone));
-  propertyAddr.addEventListener('input', liveValidate(validatePropertyAddress));
-
-  numOccupants.addEventListener('input', function () {
-    this.value = this.value.replace(/[^\d]/g, '').slice(0, 2);
-    if (hasAttemptedSubmit) validateOccupants();
-    updateFee();
-  });
-
-  numOccupants.addEventListener('blur', function () {
-    if (hasAttemptedSubmit) validateOccupants();
-  });
-
-  numKids.addEventListener('input', function () {
-    this.value = this.value.replace(/[^\d]/g, '').slice(0, 2);
-  });
-
-  numKids.addEventListener('blur', function () {
-    this.value = clampValue(this.value || 0, 0, MAX_KIDS);
-  });
-
-  idType.addEventListener('change', function () {
-    updateIdUploadVisibility();
-    if (hasAttemptedSubmit) validateSelect(idType);
-  });
-
-  maritalStatus.addEventListener('change', function () {
-    if (hasAttemptedSubmit) validateSelect(maritalStatus);
-  });
-
-  smoking.addEventListener('change', function () {
-    if (hasAttemptedSubmit) validateSelect(smoking);
-  });
-
-  hasPets.addEventListener('change', function () {
-    updatePetDetailsVisibility();
-    if (hasAttemptedSubmit) validateSelect(hasPets);
-  });
-
-  wantDeposit.addEventListener('change', function () {
-    updateDepositVisibility();
-    if (hasAttemptedSubmit) validateSelect(wantDeposit);
-  });
-
-  paymentMethod.addEventListener('change', function () {
-    if (hasAttemptedSubmit) validateSelect(paymentMethod);
-  });
-
-  depositAmount.addEventListener('input', function () {
-    if (hasAttemptedSubmit) validateDepositAmount();
-  });
-
-  depositAmount.addEventListener('blur', function () {
-    if (hasAttemptedSubmit) validateDepositAmount();
-  });
-
-  /* ------------------------------------------------------------
-     Submission
-     ------------------------------------------------------------ */
   function showThankYou() {
-    if (tyName) tyName.textContent = fullname.value.trim() || 'Applicant';
-
+    el.tyName.textContent = el.fullname.value.trim() || 'Applicant';
     form.style.display = 'none';
 
-    if (thankYouPanel) {
-      thankYouPanel.hidden = false;
-      thankYouPanel.classList.add('is-visible');
-
-      try {
-        thankYouPanel.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
-      } catch (_) {}
-    }
+    el.thankYouPanel.hidden = false;
+    el.thankYouPanel.classList.add('is-visible');
+    el.thankYouPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     const title = document.querySelector('.form-header__title');
-    if (title) title.textContent = '✅ Application Submitted';
-
     const subtitle = document.querySelector('.form-header__subtitle');
+    if (title) title.textContent = '✅ Application Submitted';
     if (subtitle) subtitle.textContent = 'Thank you for your submission.';
   }
 
-  function restoreSubmitButton() {
-    isSubmitting = false;
-
-    if (!submitBtn) return;
-
-    submitBtn.disabled = false;
-    submitBtn.innerHTML =
-      '<span class="btn-submit__icon">📨</span>' +
-      '<span class="btn-submit__text">Submit application</span>';
+  function explainError(err) {
+    if (window.location.protocol === 'file:') {
+      return 'This page is open as a local file. Please host it (or use a local ' +
+             'server such as http://localhost) — FormSubmit will not accept requests from file://.';
+    }
+    return 'Your application could not be sent' +
+           (err && err.message ? ` (${err.message})` : '') +
+           '. Please check your connection and try again.';
   }
 
-  function prepareFormForSubmit() {
-    // Keep FormSubmit's Reply-To tied to the applicant.
-    const replyTo = document.getElementById('_replyto');
-    if (replyTo) replyTo.value = email.value.trim();
+  async function submitApplication() {
+    setSubmitting(true);
 
-    // Give FormSubmit the exact current page URL.
-    const urlField = document.getElementById('_formUrl');
-    if (urlField) urlField.value = window.location.href;
+    try {
+      el.replyTo.value = el.email.value.trim();
+      updateFee();
 
-    // Make sure dynamic fee information is current.
-    updateFee();
+      // Collects every named field, including the ID files.
+      const data = new FormData(form);
 
-    // Capture signature.
-    if (!attachSignatureToForm()) {
-      return false;
+      // Signature → real PNG attachment.
+      const blob = await signatureToBlob();
+      if (!blob) throw new Error('signature could not be read');
+
+      const uploadBytes =
+        blob.size +
+        ((el.idFront.files[0] && el.idFront.files[0].size) || 0) +
+        ((el.idBack.files[0] && el.idBack.files[0].size) || 0);
+
+      if (uploadBytes > CONFIG.maxUploadBytes) {
+        throw new Error(`attachments exceed ${CONFIG.maxUploadBytes / 1048576} MB`);
+      }
+
+      data.set('signature_image', blob, 'signature.png');
+
+      // Don't set Content-Type — the browser adds the multipart boundary.
+      const response = await fetch(CONFIG.endpoint, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: data
+      });
+
+      let result = {};
+      try { result = await response.json(); } catch (_) { /* non-JSON reply */ }
+
+      const failed = !response.ok || result.success === false || result.success === 'false';
+      if (failed) throw new Error(result.message || `HTTP ${response.status}`);
+
+      showThankYou();
+    } catch (err) {
+      console.error('Submission failed:', err);
+      setSubmitting(false);
+      alert(explainError(err));
     }
-
-    // Make sure the browser has a complete multipart form.
-    return true;
   }
 
   form.addEventListener('submit', function (event) {
-    if (isSubmitting) {
-      event.preventDefault();
-      return;
-    }
+    event.preventDefault(); // we always submit via fetch
+    if (isSubmitting) return;
 
     hasAttemptedSubmit = true;
 
-    const result = validateAll();
-
-    if (!isValidResult(result)) {
-      event.preventDefault();
-      focusFirstInvalid(result);
-      showSubmitError('Please complete the highlighted fields before submitting.');
+    const firstInvalid = validateAll();
+    if (firstInvalid) {
+      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (typeof firstInvalid.focus === 'function') firstInvalid.focus({ preventScroll: true });
+      alert('Please complete the highlighted fields before submitting.');
       return;
     }
 
-    // Check optional uploads before the request leaves the browser.
-    if (idFront?.files?.[0] && !validateFile(idFront.files[0], 'Front ID')) {
-      event.preventDefault();
-      return;
-    }
-
-    if (idBack?.files?.[0] && !validateFile(idBack.files[0], 'Back ID')) {
-      event.preventDefault();
-      return;
-    }
-
-    const totalUploadSize =
-      (idFront?.files?.[0]?.size || 0) +
-      (idBack?.files?.[0]?.size || 0);
-
-    // Signature is normally very small, but include it in the check.
-    const signatureFile = signatureToFile();
-    const totalWithSignature = totalUploadSize + (signatureFile?.size || 0);
-
-    if (totalWithSignature > MAX_FILE_SIZE) {
-      event.preventDefault();
-      showSubmitError('The selected files are larger than FormSubmit’s 10 MB total upload limit.');
-      return;
-    }
-
-    if (!prepareFormForSubmit()) {
-      event.preventDefault();
-      showSubmitError('Your signature could not be prepared. Please clear it and sign again.');
-      return;
-    }
-
-    const occupants = clampValue(numOccupants.value, 1, MAX_OCCUPANTS);
-    const kids = clampValue(numKids.value || 0, 0, MAX_KIDS);
-    const amount = occupants * FEE_PER_OCCUPANT;
+    const adults = clamp(el.numOccupants.value, 1, CONFIG.maxAdults);
+    const kids = clamp(el.numKids.value || 0, 0, CONFIG.maxKids);
 
     const confirmed = window.confirm(
       'You are about to submit your application.\n\n' +
-      `Adults: ${occupants}\n` +
+      `Adults: ${adults}\n` +
       `Kids: ${kids}\n` +
-      `Application fee: $${amount}\n` +
-      `Payment method: ${paymentMethod.value}\n\n` +
-      'Click OK to submit the application.'
+      `Application fee: $${adults * CONFIG.feePerAdult}\n` +
+      `Payment method: ${el.paymentMethod.value}\n\n` +
+      'Click OK to submit.'
     );
+    if (!confirmed) return;
 
-    if (!confirmed) {
-      event.preventDefault();
-      return;
-    }
-
-    /*
-      IMPORTANT:
-      Do NOT call preventDefault() here.
-
-      The browser now performs the documented native POST to:
-      https://formsubmit.co/Cjsind90@gmail.com
-
-      Because target="hiddenFrame" is present, the FormSubmit response
-      is loaded into the hidden iframe instead of navigating this page.
-    */
-    isSubmitting = true;
-
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.innerHTML =
-        '<span class="btn-submit__icon">⏳</span>' +
-        '<span class="btn-submit__text">Submitting…</span>';
-    }
-
-    /*
-      FormSubmit's native form submission is asynchronous from the page's
-      point of view. We don't use the iframe's first load event as proof of
-      success because the iframe may already have loaded before submission.
-
-      The POST itself is allowed to leave the page. After a short delay,
-      display the confirmation UI. The actual email delivery is handled by
-      FormSubmit.
-    */
-    setTimeout(function () {
-      if (!isSubmitting) return;
-
-      submissionSent = true;
-      showThankYou();
-    }, 1800);
+    submitApplication();
   });
 
-  /* ------------------------------------------------------------
-     Initialization
-     ------------------------------------------------------------ */
-  if (numKids && !numKids.value) numKids.value = '0';
+  /* ============================================================
+     11. INIT
+     ============================================================ */
+  initSignature();
+  initStepper(el.numOccupants, el.occMinus, el.occPlus, 1, CONFIG.maxAdults, updateFee);
+  initStepper(el.numKids, el.kidsMinus, el.kidsPlus, 0, CONFIG.maxKids, () => {});
+  initFileInput(el.idFront, el.idFrontText, 'Click to upload front', 'Front ID');
+  initFileInput(el.idBack, el.idBackText, 'Click to upload back', 'Back ID');
+  initLiveValidation();
 
+  el.idType.addEventListener('change', updateIdUploadVisibility);
+  el.hasPets.addEventListener('change', updatePetVisibility);
+  el.wantDeposit.addEventListener('change', updateDepositVisibility);
+
+  if (!el.numKids.value) el.numKids.value = '0';
   updateFee();
   updateIdUploadVisibility();
-  updatePetDetailsVisibility();
+  updatePetVisibility();
   updateDepositVisibility();
-
-  console.log(
-    'Application Form ready. FormSubmit endpoint:',
-    'https://formsubmit.co/Cjsind90@gmail.com'
-  );
 })();
